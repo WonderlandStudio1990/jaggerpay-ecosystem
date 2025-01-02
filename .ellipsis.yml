@@ -6,9 +6,84 @@ about:
   - "The backend uses a Supabase database and has access to AWS S3 for file storage"
   - "For job processing we use a product called Hatchet, which has a python SDK that the backend uses"
   - "We are in the middle of a migration from AWS to GCP for the backend"
+  - "The project uses Next.js 14 with TypeScript for type safety and better developer experience"
+  - "Authentication is handled through Supabase Auth with custom JWT tokens"
+  - "The project integrates with Monite API for payment and invoice management"
+  - "Monitoring is done through Graphite and Grafana for metrics visualization"
+  - "The application follows a multi-stage Docker build process for testing and deployment"
+
+tech_stack:
+  frontend:
+    - "Next.js 14"
+    - "TypeScript"
+    - "React 18"
+    - "Tailwind CSS"
+    - "Radix UI components"
+    - "Shadcn UI"
+  backend:
+    - "Supabase (PostgreSQL)"
+    - "AWS S3"
+    - "GCP (migration in progress)"
+    - "Hatchet for job processing"
+  monitoring:
+    - "Graphite"
+    - "Grafana"
+    - "StatsD"
+  deployment:
+    - "Vercel (frontend)"
+    - "Docker"
+    - "GitHub Actions"
+
+dependencies:
+  required:
+    - "Node.js 18+"
+    - "npm 8+"
+    - "Docker"
+    - "Java 11 (for OpenAPI generation)"
+  optional:
+    - "Python 3.8+ (for Hatchet SDK)"
+    - "AWS CLI"
+    - "GCP CLI"
 
 ignore:
-  - old_README.md   # ignore this file
-  - archive/        # ignore everything in the `archive/` directory
-  - data/*.csv      # ignore all .csv files in the `data/` directory
-  - aws/**/*.ts      # ignore all .tsx files in the `aws/` directory or it's subdirectories 
+  # Build outputs and dependencies
+  - "**/.next/"
+  - "**/node_modules/"
+  - "**/dist/"
+  - "**/.turbo/"
+  - "**/build/"
+  
+  # Environment and secrets
+  - "**/.env*"
+  - "**/secrets/"
+  
+  # Legacy and migration files
+  - old_README.md
+  - archive/
+  - aws/**/*.ts
+  
+  # Data and logs
+  - data/*.csv
+  - "**/logs/"
+  - "**/*.log"
+  
+  # IDE and system files
+  - "**/.DS_Store"
+  - "**/.idea/"
+  - "**/.vscode/"
+  - "**/*.swp"
+  
+  # Test coverage and reports
+  - "**/coverage/"
+  - "**/test-results/"
+  - "**/*.test.ts.snap"
+
+directories:
+  frontend: "./src"
+  api: "./src/app/api"
+  components: "./src/components"
+  lib: "./src/lib"
+  monite: "./src/lib/monite"
+  tests: "./src/__tests__"
+  public: "./public"
+  scripts: "./scripts"
