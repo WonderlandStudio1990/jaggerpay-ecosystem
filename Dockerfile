@@ -22,12 +22,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/src/lib/monite/api/generated ./src/lib/monite/api/generated
 COPY . .
 
-# Run comprehensive validation suite
+# Run validation suite with available commands
 RUN npm run lint \
-    && npm run lint:api \
     && npm run type-check \
-    && npm run test:ci \
-    && npm run test:api:spectral \
+    && npm run test \
     && npm run format:check
 
 # Special stage for Ellipsis code validation

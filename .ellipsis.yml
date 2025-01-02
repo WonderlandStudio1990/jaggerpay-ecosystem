@@ -28,10 +28,6 @@ build:
       description: "Runs unit and integration tests to ensure code functionality."
     - command: "npm run format:check"
       description: "Verifies code formatting matches our Prettier configuration."
-    - command: "npm run lint:api"
-      description: "Validates API endpoints against our OpenAPI specifications."
-    - command: "npm run test:api:spectral"
-      description: "Runs API spec validation using Spectral ruleset."
 
 tech_stack:
   frontend:
