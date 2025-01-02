@@ -1,4 +1,4 @@
-import { Configuration, EntityApi, EntityCreate, EntityResponse } from './api/generated/api';
+import { Configuration, Entity, EntityApi, EntityCreate } from '@monite/sdk-api';
 import { moniteLogger } from '@/lib/logger';
 
 export class MoniteService {
@@ -24,7 +24,7 @@ export class MoniteService {
     this.entityApi = new EntityApi(config);
   }
 
-  async createEntity(data: EntityCreate): Promise<EntityResponse> {
+  async createEntity(data: EntityCreate): Promise<Entity> {
     try {
       moniteLogger.debug('Creating entity with data', { data });
       
@@ -68,7 +68,7 @@ export class MoniteService {
     }
   }
 
-  async getEntity(entityId: string): Promise<EntityResponse> {
+  async getEntity(entityId: string): Promise<Entity> {
     try {
       moniteLogger.debug('Fetching entity', { entityId });
       const response = await this.entityApi.getEntity({ entityId });
@@ -80,6 +80,21 @@ export class MoniteService {
         throw new Error(`Failed to fetch Monite entity: ${error.message}`);
       }
       throw new Error('Failed to fetch Monite entity');
+    }
+  }
+
+  async listEntities(): Promise<{ data: Entity[] }> {
+    try {
+      moniteLogger.debug('Fetching entities list');
+      const response = await this.entityApi.getEntities({});
+      moniteLogger.info('Entities fetched successfully', { count: response.data.length });
+      return { data: response.data };
+    } catch (error) {
+      moniteLogger.error('Failed to fetch entities', { error });
+      if (error instanceof Error) {
+        throw new Error(`Failed to fetch Monite entities: ${error.message}`);
+      }
+      throw new Error('Failed to fetch Monite entities');
     }
   }
 }
