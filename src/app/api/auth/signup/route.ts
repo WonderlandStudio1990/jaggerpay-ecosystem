@@ -1,113 +1,90 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { MoniteService } from '@/lib/monite/service';
+import { EntityCreate, EntityCreateTypeEnum } from '@/lib/monite/api/generated/api';
+import { signUp } from '@/lib/supabase/client';
+import { moniteLogger } from '@/lib/logger';
+import { authLogger } from '@/lib/logger';
+
+interface SignupData {
+  type: 'organization' | 'individual';
+  email: string;
+  password: string;
+  name: string;
+  address: {
+    country: string;
+    city: string;
+    postal_code: string;
+    line1: string;
+    line2?: string;
+    state?: string;
+  };
+  tax_id?: string;
+}
 
 export async function POST(request: Request) {
   try {
-    const { email, password, name } = await request.json();
+    const data = await request.json() as SignupData;
+    authLogger.debug('Processing signup request', { email: data.email, type: data.type });
 
-    // Validate input
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      );
-    }
-
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: 'Password must be at least 8 characters long' },
-        { status: 400 }
-      );
-    }
-
-    // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_LOCAL_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
-
-    // Check if user already exists
-    const { data: existingUser } = await supabase
-      .from('auth.users')
-      .select('id')
-      .eq('email', email)
-      .single();
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'User already exists' },
-        { status: 409 }
-      );
-    }
-
-    // Initialize Monite service
+    // First, create the Monite entity
     const moniteService = new MoniteService(
-      process.env.MONITE_API_URL || 'https://api.sandbox.monite.com',
-      process.env.MONITE_CLIENT_ID!,
-      process.env.MONITE_CLIENT_SECRET!
+      process.env.NEXT_PUBLIC_MONITE_API_URL!,
+      process.env.NEXT_PUBLIC_MONITE_CLIENT_ID!,
+      process.env.NEXT_PUBLIC_MONITE_CLIENT_SECRET!
     );
 
-    // Sign up the user with email verification
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`,
-        data: {
-          name: name || email.split('@')[0]
+    const entityData: EntityCreate = {
+      type: data.type === 'organization' ? EntityCreateTypeEnum.Organization : EntityCreateTypeEnum.Individual,
+      email: data.email,
+      address: data.address,
+      ...(data.type === 'organization' ? {
+        organization: {
+          legal_name: data.name,
+          tax_id: data.tax_id
         }
-      }
-    });
-
-    if (authError) {
-      return NextResponse.json(
-        { error: authError.message },
-        { status: 400 }
-      );
-    }
-
-    if (!authData.user) {
-      return NextResponse.json(
-        { error: 'Failed to create user' },
-        { status: 400 }
-      );
-    }
-
-    try {
-      // Create a Monite entity for the user
-      const entity = await moniteService.createEntity({
-        name: name || email.split('@')[0],
-        type: 'individual',
-        status: 'active',
-        metadata: {
-          user_id: authData.user.id,
-          email: authData.user.email || null,
-          created_at: new Date().toISOString()
-        },
-        settings: {
-          currency: 'USD',
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      } : {
+        individual: {
+          first_name: data.name.split(' ')[0],
+          last_name: data.name.split(' ').slice(1).join(' ') || undefined
         }
-      });
+      })
+    };
 
-      return NextResponse.json({
-        user: authData.user,
-        entity
-      });
-    } catch (error) {
-      // If entity creation fails, delete the user
-      await supabase.auth.admin.deleteUser(authData.user.id);
-      throw error;
-    }
+    moniteLogger.debug('Creating Monite entity', { email: data.email });
+    const entity = await moniteService.createEntity(entityData);
+    moniteLogger.info('Monite entity created successfully', { entityId: entity.id });
+
+    // Then, create the Supabase user with the Monite entity ID
+    const metadata = {
+      monite_entity_id: entity.id,
+      entity_type: data.type,
+      name: data.name
+    };
+
+    authLogger.debug('Creating Supabase user', { email: data.email });
+    const { user, session } = await signUp(
+      data.email,
+      data.password,
+      metadata
+    );
+    authLogger.info('Supabase user created successfully', { userId: user?.id });
+
+    return NextResponse.json({
+      user,
+      session,
+      entity
+    }, { status: 201 });
   } catch (error) {
-    console.error('Signup error:', error);
+    authLogger.error('Signup failed', { error });
+
+    // If it's a known error type, return a more specific error message
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Failed to create account' },
       { status: 500 }

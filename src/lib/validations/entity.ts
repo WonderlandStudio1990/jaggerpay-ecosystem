@@ -1,30 +1,23 @@
 import { z } from 'zod';
 
-export const MoniteEntityMetadataSchema = z.object({
-  user_id: z.string(),
-  email: z.string().nullable(),
-  created_at: z.string()
-});
-
-export const MoniteEntitySettingsSchema = z.object({
-  currency: z.string(),
-  timezone: z.string()
+const addressSchema = z.object({
+  country: z.string().min(2, 'Country code must be at least 2 characters'),
+  city: z.string().min(1, 'City is required'),
+  postal_code: z.string().min(1, 'Postal code is required'),
+  line1: z.string().min(1, 'Address line 1 is required'),
+  line2: z.string().optional(),
+  state: z.string().optional(),
 });
 
 export const EntityCreateSchema = z.object({
-  name: z.string().min(1),
-  type: z.enum(['individual', 'organization']),
-  status: z.enum(['active', 'inactive']).optional(),
-  metadata: MoniteEntityMetadataSchema.optional(),
-  settings: MoniteEntitySettingsSchema.optional()
+  type: z.enum(['organization', 'individual'], {
+    required_error: 'Entity type is required',
+    invalid_type_error: 'Entity type must be either organization or individual',
+  }),
+  email: z.string().email('Invalid email address'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  address: addressSchema,
+  tax_id: z.string().optional(),
 });
 
-export const UserEntityCreateSchema = z.object({
-  user_id: z.string().uuid(),
-  entity_id: z.string()
-});
-
-export type EntityCreate = z.infer<typeof EntityCreateSchema>;
-export type UserEntityCreate = z.infer<typeof UserEntityCreateSchema>;
-export type MoniteEntityMetadata = z.infer<typeof MoniteEntityMetadataSchema>;
-export type MoniteEntitySettings = z.infer<typeof MoniteEntitySettingsSchema>;
+export type EntityCreateInput = z.infer<typeof EntityCreateSchema>;
