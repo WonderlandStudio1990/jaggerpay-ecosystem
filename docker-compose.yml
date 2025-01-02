@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  graphite:
+    image: graphiteapp/graphite-statsd:latest
+    ports:
+      - "2003-2004:2003-2004"
+      - "2023-2024:2023-2024"
+      - "8125:8125/udp"
+      - "8126:8126"
+    volumes:
+      - graphite_data:/opt/graphite/storage
+      - graphite_conf:/opt/graphite/conf
+    environment:
+      - GRAPHITE_TIME_ZONE=America/Los_Angeles
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3005:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=wonderpay
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - graphite
+
+volumes:
+  graphite_data:
+  graphite_conf:
+  grafana_data: 
