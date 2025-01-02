@@ -46,4 +46,4 @@ services:
 volumes:
   graphite_data:
   graphite_conf:
-  grafana_data: 
+  grafana_data:
