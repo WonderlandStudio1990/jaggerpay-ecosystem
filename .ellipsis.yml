@@ -12,6 +12,25 @@ about:
   - "Monitoring is done through Graphite and Grafana for metrics visualization"
   - "The application follows a multi-stage Docker build process for testing and deployment"
 
+build:
+  file: "Dockerfile"
+  target: "ellipsis"
+  commands:
+    - command: "npm run lint"
+      description: "Ensures code adheres to our TypeScript and ESLint rules. Must pass before any PR."
+    - command: "npm run type-check"
+      description: "Verifies TypeScript types are correct across the codebase."
+    - command: "npm run test"
+      description: "Runs unit and integration tests to ensure code functionality."
+    - command: "npm run generate:api"
+      description: "Generates Monite API types from OpenAPI spec. Required for type safety."
+    - command: "npm run format:check"
+      description: "Verifies code formatting matches our Prettier configuration."
+    - command: "npm run lint:api"
+      description: "Validates API endpoints against our OpenAPI specifications."
+    - command: "npm run test:api:spectral"
+      description: "Runs API spec validation using Spectral ruleset."
+
 tech_stack:
   frontend:
     - "Next.js 14"

@@ -1,14 +1,24 @@
 FROM node:18-alpine AS deps
 WORKDIR /app
+
+# Install git and essential tools for both Ellipsis and production
+RUN apk add --no-cache git curl openjdk11-jre
+
+# Copy package files
 COPY package*.json ./
 RUN npm ci
 
 FROM node:18-alpine AS test
 WORKDIR /app
+
+# Copy deps and source
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Run linting, type checking, tests, and API spec validation
+# Generate Monite API types (required for both testing and build)
+RUN npm run generate:api
+
+# Run comprehensive validation suite
 RUN npm run lint \
     && npm run lint:api \
     && npm run type-check \
@@ -16,19 +26,23 @@ RUN npm run lint \
     && npm run test:api:spectral \
     && npm run format:check
 
-FROM node:18-alpine AS builder
+# Special stage for Ellipsis code validation
+# This stage can be targeted by Ellipsis for code review
+FROM test AS ellipsis
 WORKDIR /app
 
-# Install Java for OpenAPI generator and curl for healthcheck
-RUN apk add --no-cache openjdk11 curl
+# Ellipsis-specific validations can be added here
+# No ENTRYPOINT or CMD as per Ellipsis requirements
+
+FROM node:18-alpine AS builder
+WORKDIR /app
 
 # Copy from test stage (ensures we only build if tests pass)
 COPY --from=test /app ./
 
-# Generate API types and build
+# Build the application
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
-RUN npm run generate:api || true
 RUN npm run build
 
 FROM node:18-alpine AS runner
@@ -44,6 +58,11 @@ ENV NEXT_TELEMETRY_DISABLED 1
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+
+# Add non-root user for security
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+USER nextjs
 
 # Expose the port the app runs on
 EXPOSE 3000
