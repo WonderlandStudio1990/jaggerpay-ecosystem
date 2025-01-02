@@ -1,0 +1,14 @@
+version: 1.3
+
+about:
+  - "This code is a monorepo for an application that allows users to track their workouts"
+  - "The frontend is a React app, and located in the `frontend/` directory. It gets deployed to Vercel using the `deploy_vercel.sh` script"
+  - "The backend uses a Supabase database and has access to AWS S3 for file storage"
+  - "For job processing we use a product called Hatchet, which has a python SDK that the backend uses"
+  - "We are in the middle of a migration from AWS to GCP for the backend"
+
+ignore:
+  - old_README.md   # ignore this file
+  - archive/        # ignore everything in the `archive/` directory
+  - data/*.csv      # ignore all .csv files in the `data/` directory
+  - aws/**/*.ts      # ignore all .tsx files in the `aws/` directory or it's subdirectories 
