@@ -1,85 +1,174 @@
-import { Configuration, EntityApi, EntityCreate, EntityResponse } from './api/generated/api';
 import { moniteLogger } from '@/lib/logger';
+import { MoniteEntity, MoniteEntityCreate } from './types';
 
 export class MoniteService {
-  private entityApi: EntityApi;
+  private accessToken: string | null = null;
+  private tokenExpiry: number = 0;
+  private apiUrl: string;
+  private clientId: string;
+  private clientSecret: string;
 
-  constructor(apiUrl: string, clientId: string, clientSecret: string) {
-    if (!apiUrl) {
-      throw new Error('Monite API URL is required');
+  constructor() {
+    this.apiUrl = process.env.NEXT_PUBLIC_MONITE_API_URL || 'https://api.sandbox.monite.com';
+    this.clientId = process.env.NEXT_PUBLIC_MONITE_CLIENT_ID || '';
+    this.clientSecret = process.env.NEXT_PUBLIC_MONITE_CLIENT_SECRET || '';
+
+    if (!this.apiUrl) {
+      throw new Error('Missing NEXT_PUBLIC_MONITE_API_URL');
     }
-    if (!clientId) {
-      throw new Error('Monite Client ID is required');
+    if (!this.clientId) {
+      throw new Error('Missing NEXT_PUBLIC_MONITE_CLIENT_ID');
     }
-    if (!clientSecret) {
-      throw new Error('Monite Client Secret is required');
+    if (!this.clientSecret) {
+      throw new Error('Missing NEXT_PUBLIC_MONITE_CLIENT_SECRET');
+    }
+  }
+
+  private async getAccessToken(): Promise<string> {
+    if (this.accessToken && Date.now() < this.tokenExpiry) {
+      return this.accessToken;
     }
 
-    const config = new Configuration({
-      basePath: apiUrl,
-      username: clientId,
-      password: clientSecret,
+    const response = await fetch(`${this.apiUrl}/auth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        grant_type: 'client_credentials',
+        client_id: this.clientId,
+        client_secret: this.clientSecret,
+      }),
     });
 
-    this.entityApi = new EntityApi(config);
+    if (!response.ok) {
+      throw new Error('Failed to get access token');
+    }
+
+    const data = await response.json();
+    const token = data.access_token as string;
+    if (!token) {
+      throw new Error('No access token in response');
+    }
+
+    this.accessToken = token;
+    this.tokenExpiry = Date.now() + ((data.expires_in || 3600) * 1000);
+    return token;
   }
 
-  async createEntity(data: EntityCreate): Promise<EntityResponse> {
+  async createEntity(data: MoniteEntityCreate): Promise<MoniteEntity> {
     try {
-      moniteLogger.debug('Creating entity with data', { data });
-      
-      // Validate required fields
-      if (!data.email) {
-        throw new Error('Email is required');
-      }
-      if (!data.type) {
-        throw new Error('Entity type is required');
-      }
-      if (!data.address) {
-        throw new Error('Address is required');
-      }
-      if (!data.address.country) {
-        throw new Error('Country is required');
+      moniteLogger.info('Creating entity', { data });
+      const token = await this.getAccessToken();
+
+      const response = await fetch(`${this.apiUrl}/v1/entities`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create entity');
       }
 
-      // Additional validation for organization type
-      if (data.type === 'organization') {
-        if (!data.organization?.legal_name) {
-          throw new Error('Legal name is required for organizations');
-        }
-      }
-
-      // Additional validation for individual type
-      if (data.type === 'individual') {
-        if (!data.individual?.first_name) {
-          throw new Error('First name is required for individuals');
-        }
-      }
-
-      const response = await this.entityApi.createEntity({ entityCreate: data });
-      moniteLogger.info('Entity created successfully', { entityId: response.data.id });
-      return response.data;
+      const entity = await response.json();
+      moniteLogger.info('Entity created successfully', { entityId: entity.id });
+      return entity;
     } catch (error) {
       moniteLogger.error('Failed to create entity', { error });
-      if (error instanceof Error) {
-        throw new Error(`Failed to create Monite entity: ${error.message}`);
-      }
-      throw new Error('Failed to create Monite entity');
+      throw error;
     }
   }
 
-  async getEntity(entityId: string): Promise<EntityResponse> {
+  async getEntity(id: string): Promise<MoniteEntity> {
     try {
-      moniteLogger.debug('Fetching entity', { entityId });
-      const response = await this.entityApi.getEntity({ entityId });
-      moniteLogger.info('Entity fetched successfully', { entityId });
-      return response.data;
-    } catch (error) {
-      moniteLogger.error('Failed to fetch entity', { error, entityId });
-      if (error instanceof Error) {
-        throw new Error(`Failed to fetch Monite entity: ${error.message}`);
+      moniteLogger.info('Getting entity', { entityId: id });
+      const token = await this.getAccessToken();
+
+      const response = await fetch(`${this.apiUrl}/v1/entities/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get entity');
       }
-      throw new Error('Failed to fetch Monite entity');
+
+      return response.json();
+    } catch (error) {
+      moniteLogger.error('Failed to get entity', { error });
+      throw error;
+    }
+  }
+
+  async listEntities(): Promise<{ data: MoniteEntity[] }> {
+    try {
+      moniteLogger.info('Listing entities');
+      const token = await this.getAccessToken();
+
+      const response = await fetch(`${this.apiUrl}/v1/entities`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to list entities');
+      }
+
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      moniteLogger.error('Failed to list entities', { error });
+      throw error;
+    }
+  }
+
+  async updateEntity(id: string, data: Partial<MoniteEntityCreate>): Promise<MoniteEntity> {
+    try {
+      moniteLogger.info('Updating entity', { id, data });
+      const token = await this.getAccessToken();
+
+      const response = await fetch(`${this.apiUrl}/v1/entities/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update entity');
+      }
+
+      return response.json();
+    } catch (error) {
+      moniteLogger.error('Failed to update entity', { error });
+      throw error;
+    }
+  }
+
+  async deleteEntity(id: string): Promise<void> {
+    try {
+      moniteLogger.info('Deleting entity', { id });
+      const token = await this.getAccessToken();
+
+      const response = await fetch(`${this.apiUrl}/v1/entities/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete entity');
+      }
+    } catch (error) {
+      moniteLogger.error('Failed to delete entity', { error });
+      throw error;
     }
   }
 }
