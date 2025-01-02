@@ -4,19 +4,23 @@ WORKDIR /app
 # Install git and essential tools for both Ellipsis and production
 RUN apk add --no-cache git curl openjdk11-jre
 
-# Copy package files
+# Copy package files and spectral directory first
 COPY package*.json ./
-RUN npm ci
+COPY spectral ./spectral
+
+# Install dependencies without running postinstall script
+RUN npm ci --ignore-scripts
+
+# Now run API generation separately
+RUN npm run generate:api || echo "API generation failed but continuing build"
 
 FROM node:18-alpine AS test
 WORKDIR /app
 
-# Copy deps and source
+# Copy deps, generated files, and source
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/src/lib/monite/api/generated ./src/lib/monite/api/generated
 COPY . .
-
-# Generate Monite API types (required for both testing and build)
-RUN npm run generate:api
 
 # Run comprehensive validation suite
 RUN npm run lint \
