@@ -4,51 +4,46 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit, Trash, Send } from 'lucide-react';
+import { ArrowLeft, Edit, Trash } from 'lucide-react';
 
-// Mock data for a single invoice
-const invoiceData = {
+// Mock data for a single bill
+const billData = {
   id: '1',
-  client: 'Tech Solutions Inc',
-  amount: 2500.00,
-  dueDate: '2024-02-15',
+  vendor: 'Acme Corp',
+  amount: 1250.00,
+  dueDate: '2024-01-30',
   status: 'pending',
-  category: 'Consulting',
-  description: 'Professional consulting services',
-  createdAt: '2024-01-20',
+  category: 'Services',
+  description: 'Monthly service subscription',
+  createdAt: '2024-01-15',
   paymentHistory: [
     {
       id: '1',
-      date: '2024-01-25',
-      amount: 1000.00,
+      date: '2024-01-15',
+      amount: 500.00,
       status: 'completed',
     },
     {
       id: '2',
-      date: '2024-02-01',
-      amount: 1500.00,
+      date: '2024-01-20',
+      amount: 750.00,
       status: 'pending',
     },
   ],
 };
 
-const InvoiceDetail = () => {
+const BillDetail = () => {
   const router = useRouter();
   const { id } = router.query;
 
   const handleDelete = async () => {
     // TODO: Implement delete functionality with Monite API
-    console.log('Deleting invoice:', id);
-    router.push('/dashboard/invoices');
+    console.log('Deleting bill:', id);
+    router.push('/dashboard/bill-pay');
   };
 
   const handleEdit = () => {
-    router.push(`/dashboard/invoices/${id}/edit`);
-  };
-
-  const handleSendReminder = async () => {
-    // TODO: Implement send reminder functionality with Monite API
-    console.log('Sending reminder for invoice:', id);
+    router.push(`/dashboard/bill-pay/${id}/edit`);
   };
 
   return (
@@ -63,20 +58,12 @@ const InvoiceDetail = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold tracking-tight">Invoice Details</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Bill Details</h1>
             <p className="text-sm text-muted-foreground">
-              View and manage invoice information
+              View and manage bill information
             </p>
           </div>
           <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              onClick={handleSendReminder}
-              disabled={invoiceData.status === 'paid'}
-            >
-              <Send className="h-4 w-4 mr-2" />
-              Send Reminder
-            </Button>
             <Button
               variant="outline"
               size="icon"
@@ -97,49 +84,49 @@ const InvoiceDetail = () => {
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Invoice Information</CardTitle>
+              <CardTitle>Bill Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Client</p>
-                  <p className="text-lg font-semibold">{invoiceData.client}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Vendor</p>
+                  <p className="text-lg font-semibold">{billData.vendor}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Amount</p>
-                  <p className="text-lg font-semibold">${invoiceData.amount.toFixed(2)}</p>
+                  <p className="text-lg font-semibold">${billData.amount.toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Due Date</p>
-                  <p className="text-lg font-semibold">{invoiceData.dueDate}</p>
+                  <p className="text-lg font-semibold">{billData.dueDate}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Status</p>
                   <Badge
                     variant={
-                      invoiceData.status === 'paid'
+                      billData.status === 'paid'
                         ? 'default'
-                        : invoiceData.status === 'pending'
+                        : billData.status === 'pending'
                         ? 'secondary'
                         : 'destructive'
                     }
                   >
-                    {invoiceData.status}
+                    {billData.status}
                   </Badge>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Category</p>
-                  <p className="text-lg font-semibold">{invoiceData.category}</p>
+                  <p className="text-lg font-semibold">{billData.category}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Created</p>
-                  <p className="text-lg font-semibold">{invoiceData.createdAt}</p>
+                  <p className="text-lg font-semibold">{billData.createdAt}</p>
                 </div>
               </div>
-              {invoiceData.description && (
+              {billData.description && (
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Description</p>
-                  <p className="text-lg">{invoiceData.description}</p>
+                  <p className="text-lg">{billData.description}</p>
                 </div>
               )}
             </CardContent>
@@ -151,7 +138,7 @@ const InvoiceDetail = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {invoiceData.paymentHistory.map((payment) => (
+                {billData.paymentHistory.map((payment) => (
                   <div
                     key={payment.id}
                     className="flex items-center justify-between p-4 border rounded-lg"
@@ -176,7 +163,7 @@ const InvoiceDetail = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Payment Status</CardTitle>
+            <CardTitle>Make a Payment</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
@@ -185,11 +172,11 @@ const InvoiceDetail = () => {
                   Remaining Balance
                 </p>
                 <p className="text-2xl font-bold">
-                  ${invoiceData.amount.toFixed(2)}
+                  ${billData.amount.toFixed(2)}
                 </p>
               </div>
-              <Button disabled={invoiceData.status === 'paid'}>
-                Record Payment
+              <Button disabled={billData.status === 'paid'}>
+                Pay Now
               </Button>
             </div>
           </CardContent>
@@ -199,4 +186,4 @@ const InvoiceDetail = () => {
   );
 };
 
-export default InvoiceDetail; 
+export default BillDetail; 

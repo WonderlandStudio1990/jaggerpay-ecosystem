@@ -11,90 +11,107 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus } from 'lucide-react';
+import { Plus, ArrowDownRight } from 'lucide-react';
 
-// Mock data for bills
-const bills = [
+// Mock data for receivables
+const receivables = [
   {
     id: '1',
-    vendor: 'Acme Corp',
-    amount: 1250.00,
-    dueDate: '2024-01-30',
-    status: 'pending',
-    category: 'Services',
+    client: 'Tech Solutions Inc',
+    amount: 2500.00,
+    dueDate: '2024-02-15',
+    status: 'current',
+    invoiceNumber: 'INV-2024-001',
+    aging: '15 days',
   },
   {
     id: '2',
-    vendor: 'Office Supplies Inc',
-    amount: 450.00,
-    dueDate: '2024-02-05',
-    status: 'paid',
-    category: 'Supplies',
+    client: 'Design Studio Co',
+    amount: 1800.00,
+    dueDate: '2024-02-20',
+    status: 'overdue',
+    invoiceNumber: 'INV-2024-002',
+    aging: '30 days',
   },
   {
     id: '3',
-    vendor: 'Tech Solutions Ltd',
-    amount: 2800.00,
-    dueDate: '2024-02-15',
-    status: 'overdue',
-    category: 'Software',
+    client: 'Marketing Agency',
+    amount: 3500.00,
+    dueDate: '2024-02-10',
+    status: 'paid',
+    invoiceNumber: 'INV-2024-003',
+    aging: '0 days',
   },
 ];
 
-const BillPay = () => {
+const Receivables = () => {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Bill Pay</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Receivables</h1>
             <p className="text-sm text-muted-foreground">
-              Manage and pay your bills in one place
+              Track and manage your accounts receivable
             </p>
           </div>
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            New Bill
+            New Invoice
           </Button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Total Outstanding
+                Total Receivables
               </CardTitle>
+              <ArrowDownRight className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$4,500.00</div>
+              <div className="text-2xl font-bold">$7,800.00</div>
               <p className="text-xs text-muted-foreground">
-                3 bills pending payment
+                +20.1% from last month
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Due This Week
+                Current
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$1,250.00</div>
+              <div className="text-2xl font-bold">$2,500.00</div>
               <p className="text-xs text-muted-foreground">
-                1 bill due soon
+                1 invoice
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Paid This Month
+                Overdue
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$3,750.00</div>
+              <div className="text-2xl font-bold text-destructive">$1,800.00</div>
               <p className="text-xs text-muted-foreground">
-                5 bills paid
+                1 invoice
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Paid (Last 30 Days)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">$3,500.00</div>
+              <p className="text-xs text-muted-foreground">
+                1 invoice
               </p>
             </CardContent>
           </Card>
@@ -102,47 +119,51 @@ const BillPay = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Bills</CardTitle>
+            <CardTitle>Receivables List</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Vendor</TableHead>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Client</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Due Date</TableHead>
-                  <TableHead>Category</TableHead>
+                  <TableHead>Aging</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {bills.map((bill) => (
-                  <TableRow key={bill.id}>
-                    <TableCell className="font-medium">{bill.vendor}</TableCell>
-                    <TableCell>${bill.amount.toFixed(2)}</TableCell>
-                    <TableCell>{bill.dueDate}</TableCell>
-                    <TableCell>{bill.category}</TableCell>
+                {receivables.map((receivable) => (
+                  <TableRow key={receivable.id}>
+                    <TableCell className="font-medium">
+                      {receivable.invoiceNumber}
+                    </TableCell>
+                    <TableCell>{receivable.client}</TableCell>
+                    <TableCell>${receivable.amount.toFixed(2)}</TableCell>
+                    <TableCell>{receivable.dueDate}</TableCell>
+                    <TableCell>{receivable.aging}</TableCell>
                     <TableCell>
                       <Badge
                         variant={
-                          bill.status === 'paid'
+                          receivable.status === 'paid'
                             ? 'default'
-                            : bill.status === 'pending'
+                            : receivable.status === 'current'
                             ? 'secondary'
                             : 'destructive'
                         }
                       >
-                        {bill.status}
+                        {receivable.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"
                         size="sm"
-                        disabled={bill.status === 'paid'}
+                        disabled={receivable.status === 'paid'}
                       >
-                        Pay Now
+                        Send Reminder
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -156,4 +177,4 @@ const BillPay = () => {
   );
 };
 
-export default BillPay;
+export default Receivables; 

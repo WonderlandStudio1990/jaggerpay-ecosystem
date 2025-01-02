@@ -1,13 +1,25 @@
 import React from 'react';
+import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/router';
+import { ArrowLeft } from 'lucide-react';
 
-interface NewBillFormData {
+// Mock data for a single bill
+const billData = {
+  id: '1',
+  vendor: 'Acme Corp',
+  amount: 1250.00,
+  dueDate: '2024-01-30',
+  status: 'pending',
+  category: 'Services',
+  description: 'Monthly service subscription',
+};
+
+interface EditBillFormData {
   vendor: string;
   amount: string;
   dueDate: string;
@@ -15,28 +27,45 @@ interface NewBillFormData {
   description: string;
 }
 
-const NewBill = () => {
+const EditBill = () => {
   const router = useRouter();
-  const { register, handleSubmit, formState: { errors } } = useForm<NewBillFormData>();
+  const { id } = router.query;
 
-  const onSubmit = async (data: NewBillFormData) => {
+  const { register, handleSubmit, formState: { errors } } = useForm<EditBillFormData>({
+    defaultValues: {
+      vendor: billData.vendor,
+      amount: billData.amount.toString(),
+      dueDate: billData.dueDate,
+      category: billData.category,
+      description: billData.description,
+    },
+  });
+
+  const onSubmit = async (data: EditBillFormData) => {
     try {
-      // TODO: Implement bill creation logic with Monite API
-      console.log('Creating new bill:', data);
-      router.push('/dashboard/bill-pay');
+      // TODO: Implement bill update logic with Monite API
+      console.log('Updating bill:', id, data);
+      router.push(`/dashboard/bill-pay/${id}`);
     } catch (error) {
-      console.error('Error creating bill:', error);
+      console.error('Error updating bill:', error);
     }
   };
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">New Bill</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Edit Bill</h1>
             <p className="text-sm text-muted-foreground">
-              Add a new bill to your account
+              Update bill information
             </p>
           </div>
         </div>
@@ -116,7 +145,7 @@ const NewBill = () => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Create Bill</Button>
+                <Button type="submit">Update Bill</Button>
               </div>
             </form>
           </CardContent>
@@ -126,4 +155,4 @@ const NewBill = () => {
   );
 };
 
-export default NewBill; 
+export default EditBill; 

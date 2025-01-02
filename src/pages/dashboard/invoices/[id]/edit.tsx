@@ -1,62 +1,91 @@
 import React from 'react';
+import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/router';
+import { ArrowLeft } from 'lucide-react';
 
-interface NewBillFormData {
-  vendor: string;
+// Mock data for a single invoice
+const invoiceData = {
+  id: '1',
+  client: 'Tech Solutions Inc',
+  amount: 2500.00,
+  dueDate: '2024-02-15',
+  status: 'pending',
+  category: 'Consulting',
+  description: 'Professional consulting services',
+};
+
+interface EditInvoiceFormData {
+  client: string;
   amount: string;
   dueDate: string;
   category: string;
   description: string;
 }
 
-const NewBill = () => {
+const EditInvoice = () => {
   const router = useRouter();
-  const { register, handleSubmit, formState: { errors } } = useForm<NewBillFormData>();
+  const { id } = router.query;
 
-  const onSubmit = async (data: NewBillFormData) => {
+  const { register, handleSubmit, formState: { errors } } = useForm<EditInvoiceFormData>({
+    defaultValues: {
+      client: invoiceData.client,
+      amount: invoiceData.amount.toString(),
+      dueDate: invoiceData.dueDate,
+      category: invoiceData.category,
+      description: invoiceData.description,
+    },
+  });
+
+  const onSubmit = async (data: EditInvoiceFormData) => {
     try {
-      // TODO: Implement bill creation logic with Monite API
-      console.log('Creating new bill:', data);
-      router.push('/dashboard/bill-pay');
+      // TODO: Implement invoice update logic with Monite API
+      console.log('Updating invoice:', id, data);
+      router.push(`/dashboard/invoices/${id}`);
     } catch (error) {
-      console.error('Error creating bill:', error);
+      console.error('Error updating invoice:', error);
     }
   };
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">New Bill</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Edit Invoice</h1>
             <p className="text-sm text-muted-foreground">
-              Add a new bill to your account
+              Update invoice information
             </p>
           </div>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Bill Details</CardTitle>
+            <CardTitle>Invoice Details</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="vendor">Vendor</Label>
+                  <Label htmlFor="client">Client</Label>
                   <Input
-                    id="vendor"
-                    {...register('vendor', { required: 'Vendor is required' })}
-                    placeholder="Enter vendor name"
+                    id="client"
+                    {...register('client', { required: 'Client is required' })}
+                    placeholder="Enter client name"
                   />
-                  {errors.vendor && (
-                    <p className="text-sm text-destructive">{errors.vendor.message}</p>
+                  {errors.client && (
+                    <p className="text-sm text-destructive">{errors.client.message}</p>
                   )}
                 </div>
 
@@ -91,7 +120,7 @@ const NewBill = () => {
                   <Input
                     id="category"
                     {...register('category', { required: 'Category is required' })}
-                    placeholder="Enter bill category"
+                    placeholder="Enter invoice category"
                   />
                   {errors.category && (
                     <p className="text-sm text-destructive">{errors.category.message}</p>
@@ -103,7 +132,7 @@ const NewBill = () => {
                   <Input
                     id="description"
                     {...register('description')}
-                    placeholder="Enter bill description (optional)"
+                    placeholder="Enter invoice description (optional)"
                   />
                 </div>
               </div>
@@ -116,7 +145,7 @@ const NewBill = () => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Create Bill</Button>
+                <Button type="submit">Update Invoice</Button>
               </div>
             </form>
           </CardContent>
@@ -126,4 +155,4 @@ const NewBill = () => {
   );
 };
 
-export default NewBill; 
+export default EditInvoice; 

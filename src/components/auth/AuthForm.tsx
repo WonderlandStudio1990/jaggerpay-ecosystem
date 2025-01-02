@@ -1,129 +1,103 @@
 import React from 'react';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface AuthFormProps {
-  mode: 'login' | 'signup' | 'reset';
+  mode: 'login' | 'signup';
   onSubmit: (data: any) => void;
   isLoading?: boolean;
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit, isLoading = false }) => {
-  const [showPassword, setShowPassword] = React.useState(false);
-  const [formData, setFormData] = React.useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    name: '',
-  });
+interface AuthFormData {
+  email: string;
+  password: string;
+  name?: string;
+  company?: string;
+}
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-  };
+const AuthForm = ({ mode, onSubmit, isLoading }: AuthFormProps) => {
+  const { register, handleSubmit, formState: { errors } } = useForm<AuthFormData>();
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {mode === 'signup' && (
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Full Name
-          </label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            required={mode === 'signup'}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            value={formData.name}
-            onChange={handleChange}
-          />
-        </div>
-      )}
-
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email Address
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          value={formData.email}
-          onChange={handleChange}
-        />
-      </div>
-
-      {mode !== 'reset' && (
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-            Password
-          </label>
-          <div className="relative mt-1">
-            <input
+    <div className="grid gap-6">
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="grid gap-4">
+          {mode === 'signup' && (
+            <>
+              <div className="grid gap-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  placeholder="John Doe"
+                  type="text"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  disabled={isLoading}
+                  {...register('name', { required: 'Name is required' })}
+                />
+                {errors.name && (
+                  <p className="text-sm text-destructive">{errors.name.message}</p>
+                )}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="company">Company</Label>
+                <Input
+                  id="company"
+                  placeholder="Your Company"
+                  type="text"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  disabled={isLoading}
+                  {...register('company', { required: 'Company is required' })}
+                />
+                {errors.company && (
+                  <p className="text-sm text-destructive">{errors.company.message}</p>
+                )}
+              </div>
+            </>
+          )}
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              placeholder="name@example.com"
+              type="email"
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect="off"
+              disabled={isLoading}
+              {...register('email', { required: 'Email is required' })}
+            />
+            {errors.email && (
+              <p className="text-sm text-destructive">{errors.email.message}</p>
+            )}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
               id="password"
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              required={mode !== 'reset'}
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 pr-10"
-              value={formData.password}
-              onChange={handleChange}
+              placeholder="••••••••"
+              type="password"
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              disabled={isLoading}
+              {...register('password', { required: 'Password is required' })}
             />
-            <button
-              type="button"
-              className="absolute inset-y-0 right-0 flex items-center pr-3"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? (
-                <EyeOff className="h-5 w-5 text-gray-400" />
-              ) : (
-                <Eye className="h-5 w-5 text-gray-400" />
-              )}
-            </button>
+            {errors.password && (
+              <p className="text-sm text-destructive">{errors.password.message}</p>
+            )}
           </div>
+          <Button disabled={isLoading}>
+            {isLoading && (
+              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background" />
+            )}
+            {mode === 'login' ? 'Sign In' : 'Sign Up'}
+          </Button>
         </div>
-      )}
-
-      {mode === 'signup' && (
-        <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-            Confirm Password
-          </label>
-          <div className="relative mt-1">
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type={showPassword ? 'text' : 'password'}
-              required={mode === 'signup'}
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 pr-10"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-            />
-          </div>
-        </div>
-      )}
-
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isLoading ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
-        ) : (
-          mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Reset Password'
-        )}
-      </button>
-    </form>
+      </form>
+    </div>
   );
 };
 
-export default AuthForm; 
+export default AuthForm;
