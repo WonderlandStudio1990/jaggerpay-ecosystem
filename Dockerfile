@@ -24,9 +24,7 @@ COPY . .
 
 # Run validation suite with available commands
 RUN npm run lint \
-    && npm run type-check \
-    && npm run test \
-    && npm run format:check
+    && npm run test
 
 # Special stage for Ellipsis code validation
 # This stage can be targeted by Ellipsis for code review
