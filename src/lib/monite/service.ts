@@ -1,143 +1,85 @@
-import { MoniteApiClient } from './api/client';
-import { MoniteEntity, MoniteEntityCreate, MoniteError } from '@/lib/types';
+import { Configuration, EntityApi, EntityCreate, EntityResponse } from './api/generated/api';
+import { moniteLogger } from '@/lib/logger';
 
 export class MoniteService {
-  private readonly apiClient: MoniteApiClient;
-  private static instance: MoniteService;
+  private entityApi: EntityApi;
 
-  constructor(
-    baseURL: string,
-    clientId: string,
-    clientSecret: string
-  ) {
-    this.validateConfig(baseURL, clientId, clientSecret);
-    this.apiClient = new MoniteApiClient({
-      baseURL,
-      clientId,
-      clientSecret,
-      timeout: 10000,
-      maxRetries: 3
+  constructor(apiUrl: string, clientId: string, clientSecret: string) {
+    if (!apiUrl) {
+      throw new Error('Monite API URL is required');
+    }
+    if (!clientId) {
+      throw new Error('Monite Client ID is required');
+    }
+    if (!clientSecret) {
+      throw new Error('Monite Client Secret is required');
+    }
+
+    const config = new Configuration({
+      basePath: apiUrl,
+      username: clientId,
+      password: clientSecret,
     });
+
+    this.entityApi = new EntityApi(config);
   }
 
-  private validateConfig(baseURL: string, clientId: string, clientSecret: string): void {
-    if (!baseURL || !clientId || !clientSecret) {
-      const error = new Error('Missing required configuration') as MoniteError;
-      error.code = 'INVALID_CONFIG';
-      error.status = 500;
-      throw error;
-    }
-  }
-
-  public static getInstance(
-    baseURL?: string,
-    clientId?: string,
-    clientSecret?: string
-  ): MoniteService {
-    if (!MoniteService.instance) {
-      if (!baseURL || !clientId || !clientSecret) {
-        throw new Error('MoniteService not initialized. Please provide configuration.');
+  async createEntity(data: EntityCreate): Promise<EntityResponse> {
+    try {
+      moniteLogger.debug('Creating entity with data', { data });
+      
+      // Validate required fields
+      if (!data.email) {
+        throw new Error('Email is required');
       }
-      MoniteService.instance = new MoniteService(baseURL, clientId, clientSecret);
-    }
-    return MoniteService.instance;
-  }
-
-  async createEntity(params: MoniteEntityCreate): Promise<MoniteEntity> {
-    try {
-      const response = await this.apiClient.request<MoniteEntity>({
-        method: 'POST',
-        url: '/v1/entities',
-        data: params
-      });
-
-      return this.validateEntityResponse(response);
-    } catch (error) {
-      throw this.handleApiError(error);
-    }
-  }
-
-  async getEntity(entityId: string): Promise<MoniteEntity> {
-    try {
-      const response = await this.apiClient.request<MoniteEntity>({
-        method: 'GET',
-        url: `/v1/entities/${entityId}`
-      });
-
-      return this.validateEntityResponse(response);
-    } catch (error) {
-      throw this.handleApiError(error);
-    }
-  }
-
-  async updateEntity(entityId: string, params: Partial<MoniteEntityCreate>): Promise<MoniteEntity> {
-    try {
-      const response = await this.apiClient.request<MoniteEntity>({
-        method: 'PATCH',
-        url: `/v1/entities/${entityId}`,
-        data: params
-      });
-
-      return this.validateEntityResponse(response);
-    } catch (error) {
-      throw this.handleApiError(error);
-    }
-  }
-
-  async deleteEntity(entityId: string): Promise<void> {
-    try {
-      await this.apiClient.request({
-        method: 'DELETE',
-        url: `/v1/entities/${entityId}`
-      });
-    } catch (error) {
-      throw this.handleApiError(error);
-    }
-  }
-
-  async listEntities(): Promise<{ data: MoniteEntity[] }> {
-    try {
-      const response = await this.apiClient.request<{ data: MoniteEntity[] }>({
-        method: 'GET',
-        url: '/v1/entities'
-      });
-
-      if (!response || !Array.isArray(response.data)) {
-        throw this.createError('Invalid response format', 'INVALID_RESPONSE', 500);
+      if (!data.type) {
+        throw new Error('Entity type is required');
+      }
+      if (!data.address) {
+        throw new Error('Address is required');
+      }
+      if (!data.address.country) {
+        throw new Error('Country is required');
       }
 
-      return response;
+      // Additional validation for organization type
+      if (data.type === 'organization') {
+        if (!data.organization?.legal_name) {
+          throw new Error('Legal name is required for organizations');
+        }
+      }
+
+      // Additional validation for individual type
+      if (data.type === 'individual') {
+        if (!data.individual?.first_name) {
+          throw new Error('First name is required for individuals');
+        }
+      }
+
+      const response = await this.entityApi.createEntity({ entityCreate: data });
+      moniteLogger.info('Entity created successfully', { entityId: response.data.id });
+      return response.data;
     } catch (error) {
-      throw this.handleApiError(error);
+      moniteLogger.error('Failed to create entity', { error });
+      if (error instanceof Error) {
+        throw new Error(`Failed to create Monite entity: ${error.message}`);
+      }
+      throw new Error('Failed to create Monite entity');
     }
   }
 
-  private validateEntityResponse(response: any): MoniteEntity {
-    if (!response || !response.id || !response.type) {
-      throw this.createError('Invalid entity response', 'INVALID_ENTITY', 500);
+  async getEntity(entityId: string): Promise<EntityResponse> {
+    try {
+      moniteLogger.debug('Fetching entity', { entityId });
+      const response = await this.entityApi.getEntity({ entityId });
+      moniteLogger.info('Entity fetched successfully', { entityId });
+      return response.data;
+    } catch (error) {
+      moniteLogger.error('Failed to fetch entity', { error, entityId });
+      if (error instanceof Error) {
+        throw new Error(`Failed to fetch Monite entity: ${error.message}`);
+      }
+      throw new Error('Failed to fetch Monite entity');
     }
-    return response;
-  }
-
-  private handleApiError(error: any): MoniteError {
-    if (error instanceof Error) {
-      const moniteError = error as MoniteError;
-      moniteError.code = moniteError.code || 'UNKNOWN_ERROR';
-      moniteError.status = moniteError.status || 500;
-      return moniteError;
-    }
-
-    return this.createError(
-      error?.message || 'An unknown error occurred',
-      error?.code || 'UNKNOWN_ERROR',
-      error?.status || 500
-    );
-  }
-
-  private createError(message: string, code: string, status: number): MoniteError {
-    const error = new Error(message) as MoniteError;
-    error.code = code;
-    error.status = status;
-    return error;
   }
 }
